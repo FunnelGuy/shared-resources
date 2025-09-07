@@ -1,0 +1,26 @@
+{
+  "aws_services": {
+    "bedrock": {
+      "us-west-2": "https://bedrock-runtime.us-west-2.amazonaws.com",
+      "us-east-1": "https://bedrock-runtime.us-east-1.amazonaws.com"
+    },
+    "lambda": {
+      "us-west-2": "https://lambda.us-west-2.amazonaws.com",
+      "us-east-1": "https://lambda.us-east-1.amazonaws.com"
+    },
+    "api_gateway": {
+      "us-west-2": "https://apigateway.us-west-2.amazonaws.com",
+      "us-east-1": "https://apigateway.us-east-1.amazonaws.com"
+    }
+  },
+  "external_apis": {
+    "linkedin": "https://api.linkedin.com/v2/",
+    "microsoft_graph": "https://graph.microsoft.com/v1.0/",
+    "google_calendar": "https://www.googleapis.com/calendar/v3/"
+  },
+  "timeouts": {
+    "api_timeout": 30,
+    "retry_attempts": 3,
+    "backoff_factor": 2
+  }
+}

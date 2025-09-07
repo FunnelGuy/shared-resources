@@ -1,0 +1,21 @@
+{
+  "aws_regions": {
+    "primary": "us-west-2",
+    "secondary": "us-east-1",
+    "available": [
+      "us-west-2",
+      "us-east-1", 
+      "eu-west-1",
+      "ap-southeast-2"
+    ]
+  },
+  "bedrock_regions": [
+    "us-west-2",
+    "us-east-1"
+  ],
+  "lambda_regions": [
+    "us-west-2",
+    "us-east-1",
+    "eu-west-1"
+  ]
+}

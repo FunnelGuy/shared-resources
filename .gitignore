@@ -1,0 +1,28 @@
+# Sensitive credentials (DO NOT COMMIT)
+credentials.txt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# API keys and secrets
+api-keys.txt
+secrets.json
+.env
+
+# Database connection strings
+db-config.txt
+connection-strings.txt
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
