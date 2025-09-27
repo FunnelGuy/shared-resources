@@ -1,0 +1,135 @@
+{
+  "deployment_guide": {
+    "version": "1.0",
+    "last_updated": "2025-09-13",
+    "overview": "Comprehensive guide for AWS Lambda deployments based on real-world experience"
+  },
+  
+  "permissions_required": {
+    "lambda_deployment": [
+      "lambda:GetFunction",
+      "lambda:UpdateFunctionCode", 
+      "lambda:UpdateFunctionConfiguration",
+      "lambda:ListFunctions",
+      "lambda:InvokeFunction"
+    ],
+    "recommended_policy": "AWSLambda_FullAccess",
+    "policy_search_note": "Use underscore: AWSLambda_FullAccess (not AWSLambdaFullAccess)"
+  },
+  
+  "common_user_roles": {
+    "AWSLambdaRole": {
+      "type": "IAM User",
+      "common_issues": [
+        "Missing lambda permissions by default",
+        "Can invoke functions but cannot deploy",
+        "Requires explicit Lambda policy attachment"
+      ],
+      "resolution": "Attach AWSLambda_FullAccess policy via IAM Console"
+    }
+  },
+  
+  "deployment_methods": [
+    {
+      "name": "Standard Deployment", 
+      "script": "deploy-lambda.py",
+      "requirements": "Full Lambda permissions",
+      "success_rate": "High (with proper permissions)",
+      "use_when": "All permissions available"
+    },
+    {
+      "name": "Direct Deployment",
+      "script": "deploy-direct.py", 
+      "requirements": "Minimal permissions (lambda:UpdateFunctionCode)",
+      "success_rate": "Medium (bypasses some checks)",
+      "use_when": "Limited permissions or permission check failures"
+    },
+    {
+      "name": "Manual Console Upload",
+      "method": "AWS Lambda Console",
+      "requirements": "Console access only", 
+      "success_rate": "Very High",
+      "use_when": "Automation blocked by security software or permissions"
+    }
+  ],
+  
+  "corporate_environment_challenges": {
+    "security_software": {
+      "ThreatLocker": {
+        "blocks": ["PowerShell module installation", "AWS CLI execution"],
+        "workaround": "Request application release or use web console"
+      }
+    },
+    "admin_rights": {
+      "required_for": ["PowerShell module installation", "AWS CLI installation"],
+      "alternative": "Use -Scope CurrentUser for PowerShell modules"
+    },
+    "aws_cli_issues": {
+      "common_error": "Access denied when starting aws.exe",
+      "resolution": "Use boto3 Python SDK instead of AWS CLI"
+    }
+  },
+  
+  "authentication_methods": {
+    "credentials_file": {
+      "location": "../common-runtime-resources/credentials.txt",
+      "format": "KEY=VALUE pairs",
+      "boto3_autodiscovery": true,
+      "console_login_required": false
+    },
+    "aws_standard_location": {
+      "location": "~/.aws/credentials", 
+      "priority": "Higher than custom location",
+      "boto3_autodiscovery": true,
+      "console_login_required": false
+    },
+    "console_session": {
+      "temporary": true,
+      "not_required_for_automation": true,
+      "use_case": "Manual operations only"
+    }
+  },
+  
+  "troubleshooting": {
+    "AccessDeniedException": {
+      "lambda:GetFunction": "User needs Lambda read permissions",
+      "lambda:UpdateFunctionCode": "User needs Lambda deployment permissions", 
+      "lambda:ListFunctions": "User needs Lambda list permissions",
+      "resolution": "Attach AWSLambda_FullAccess policy"
+    },
+    "ResourceNotFoundException": {
+      "function_not_found": "Check function name and region",
+      "wrong_region": "Verify Lambda function region matches client region"
+    },
+    "policy_search_failures": {
+      "AWSLambdaFullAccess": "Returns no results (incorrect name)",
+      "AWSLambda_FullAccess": "Correct name with underscore"
+    }
+  },
+  
+  "testing_verification": {
+    "local_testing": {
+      "script": "test-local-timezone-fixes.py",
+      "purpose": "Verify code logic without AWS",
+      "requirements": "None (standalone)"
+    },
+    "permissions_check": {
+      "script": "check-aws-permissions.py", 
+      "purpose": "Diagnose AWS access and permissions",
+      "output": "Current user identity and permission status"
+    },
+    "remote_testing": {
+      "script": "test-specific-lambda.py",
+      "purpose": "Verify deployed Lambda function",
+      "requirements": "lambda:InvokeFunction permission"
+    }
+  },
+  
+  "region_configurations": {
+    "availability_windows_function": {
+      "function_name": "alignme-availability-windows-Hugh",
+      "region": "us-west-2",
+      "runtime": "python3.9"
+    }
+  }
+}
