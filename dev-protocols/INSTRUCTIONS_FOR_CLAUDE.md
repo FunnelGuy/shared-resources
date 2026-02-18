@@ -23,6 +23,20 @@ At the start of every conversation:
 - Deliver one complete file at a time — never partial snippets
 - Wait for user testing confirmation before proceeding to the next file
 
+### Templates — central location, never copied
+
+Word templates (.dotx) and other format templates live in one central location (currently Box, migrating to SharePoint). Never copy templates into repos, working folders, or anywhere else. The whole purpose of a template is that there is exactly one current version. Always reference templates by their central path.
+
+### Word (.docx) files
+
+The Read tool cannot open .docx files (binary format error). Use Python instead:
+
+- **Read**: `from docx import Document; doc = Document(path)` — iterate `doc.paragraphs` for text, `doc.tables` for table data
+- **Quick text extract** (no python-docx needed): use `zipfile` to open the .docx and parse `word/document.xml` with `xml.etree.ElementTree`
+- **Create/modify**: use `python-docx` (`Document()`, add paragraphs/tables/styles, `doc.save(path)`)
+
+`python-docx` is installed on this machine (`1.2.0`). Always prefer it over asking users to convert files to PDF or paste text.
+
 ## Branch guide maintenance
 
 The branch guide is your **state management system**. Update it after every:
