@@ -1,226 +1,107 @@
-# Common Runtime Resources
+# Shared Resources
 
-This repository contains shared runtime resources used across all applications in the development environment.
+Centralised shared resources for all align.me GitHub repos. This repo was renamed from `common-runtime-resources` to `shared-resources` on 2026-02-18 to better reflect its expanded scope.
 
 ## Purpose
 
-This repository stores runtime configurations, credentials, and shared resources that applications need during execution. It serves as the centralized location for:
+This repository holds resources that are shared across all repos on this machine:
 
-- AWS credentials and configuration files
-- API keys and authentication tokens
-- Shared configuration files
-- Runtime templates and defaults
-- Environment-specific settings
+- **Claude Code guardrails** — ThreatLocker PreToolUse hook (blocks script creation/execution outside GitHub folders)
+- **Development protocols** — branch naming, versioning, session management, branch guide templates
+- **Shared configurations** — AWS regions, endpoints, deployment configs
+- **Credential templates** — placeholder files for sensitive credentials (actual credentials are gitignored)
 
 ## Repository Structure
 
 ```
-common-runtime-resources/
-├── README.md              # This documentation
-├── .gitignore            # Excludes sensitive files from commits
-├── credentials.txt       # AWS credentials (gitignored)
-├── templates/            # Configuration templates
-│   ├── credentials.template.txt
-│   └── config.template.json
-└── shared-configs/       # Non-sensitive shared configurations
-    ├── regions.json      # AWS regions and defaults
-    └── endpoints.json    # API endpoints and URLs
+shared-resources/
+├── README.md                          # This file
+├── .gitignore                         # Excludes sensitive files
+├── claude-hooks/
+│   └── threatlocker-guard.py          # Canonical PreToolUse hook (all repos)
+├── dev-protocols/
+│   ├── README.md                      # What's shared vs. repo-specific
+│   ├── BRANCH_PROTOCOLS.md            # Branch creation, naming, versioning, closure
+│   ├── INSTRUCTIONS_FOR_CLAUDE.md     # Claude Code session guidelines
+│   └── BRANCH_GUIDE_TEMPLATE.md       # Universal branch guide template
+├── shared-configs/
+│   ├── regions.json                   # AWS regions and defaults
+│   ├── endpoints.json                 # API endpoints and URLs
+│   └── aws-lambda-deployment.json     # Lambda deployment config
+└── templates/
+    ├── credentials.template.txt       # AWS credential placeholder
+    └── boto3-usage-examples.py        # AWS SDK usage reference
 ```
 
-## Development Environment Integration
+## Three-Tier Shared Standards
 
-This repository is part of the organized development environment:
+All align.me repos inherit standards from three levels:
 
 ```
-C:\Development\
-├── common-runtime-resources/  # Runtime resources (this repository)
-├── shared-dev-protocols/      # Development workflow standards  
-└── [application-repositories] # Individual applications
+~/.claude/CLAUDE.md              (Tier 1 — user-level, all repos automatically)
+    ↓ contains: ThreatLocker, locale, company values, brand standards,
+      Knowledge Manager authority, Content Agent Request template
+
+shared-resources/                (Tier 2 — shared repo, referenced by path)
+    ↓ contains: hook script, dev protocols, configs, templates
+
+<repo>/CLAUDE.md                 (Tier 3 — repo-specific, domain details only)
+    ↓ contains: valid domains, version file, test commands, app-specific workflows
 ```
 
-### Key Distinction
-- **common-runtime-resources/**: Application runtime needs (credentials, configs)
-- **shared-dev-protocols/**: Development workflow standards (branch protocols, guidelines)
+### How repos reference shared protocols
 
-## Usage by Applications
+Each repo's `DEVELOPMENT_PROTOCOLS.md` points to:
 
-Applications reference runtime resources using relative paths:
-
-```python
-# Example: Loading AWS credentials
-credentials_path = "../common-runtime-resources/credentials.txt"
-
-# Example: Loading shared configuration
-config_path = "../common-runtime-resources/shared-configs/regions.json"
+```
+../shared-resources/dev-protocols/
 ```
 
-## Security Guidelines
+And adds only repo-specific details (domains, version file location, test commands).
 
-### ⚠️ **CRITICAL SECURITY NOTICE**
+### ThreatLocker hook
 
-**NEVER commit sensitive credentials or secrets to this repository.**
+The canonical copy is `claude-hooks/threatlocker-guard.py`. It is referenced by `~/.claude/settings.json` as a PreToolUse hook for Bash and Write events. Individual repos should not have their own copies.
 
-The `.gitignore` file excludes sensitive files, but always verify before committing:
+## Repos Using These Resources
 
-```bash
-# Always check what you're committing
-git status
-git diff --cached
+| Repo | Has DEVELOPMENT_PROTOCOLS.md | Has CLAUDE.md |
+|------|------------------------------|---------------|
+| Knowledge-Manager | No (protocols in CLAUDE.md) | Yes (extensive) |
+| Networker | Yes | Yes (extensive) |
+| Product Manager | No | Yes |
+| Accelo-agent | No | Yes |
+| padding-outlook | Yes | No |
+| availability-windows | Yes | No |
+| contact-details-extractor | Yes | No |
+| Proposal-reviewer | Yes | No |
+| hr-manager | Yes (expected) | TBC |
 
-# Only commit non-sensitive configuration files
-```
+Other repos in `~/GitHub/` (claude-code-templates, Funnel-Plan, etc.) inherit user-level CLAUDE.md and may adopt dev-protocols as needed.
 
-### Sensitive Files (Excluded from Git)
-- `credentials.txt` - AWS access keys
-- `*.key` - Private keys
-- `api-keys.txt` - API authentication tokens
-- `.env` - Environment variables with secrets
+## Security
 
-### Safe to Commit
-- `templates/` - Template files with placeholders
-- `shared-configs/` - Non-sensitive configuration
-- `README.md` - Documentation
-- `.gitignore` - Security exclusions
+**Never commit sensitive credentials.** The `.gitignore` excludes `credentials.txt`, `*.key`, `api-keys.txt`, and `.env`. Use template files in `templates/` as placeholders.
 
-## Setup Instructions
+---
 
-### For New Team Members
+## Session Log
 
-1. **Clone this repository**:
-   ```bash
-   cd C:\Development
-   git clone https://github.com/FunnelGuy/common-runtime-resources.git
-   # Or rename from existing Common/ directory
-   ```
+### 2026-02-18 — Cross-Repo Standards Consolidation
 
-2. **Create sensitive files from templates**:
-   ```bash
-   cd common-runtime-resources
-   cp templates/credentials.template.txt credentials.txt
-   ```
+**Goal:** Establish shared standards across all align.me repos, eliminate duplication, and consolidate guardrails.
 
-3. **Add your actual credentials**:
-   - Edit `credentials.txt` with real AWS keys
-   - Never commit this file (it's gitignored)
+**Completed:**
 
-4. **Verify security**:
-   ```bash
-   git status  # Should not show credentials.txt
-   ```
+1. **User-level CLAUDE.md created** (`~/.claude/CLAUDE.md`) — shared standards that all repos inherit automatically: ThreatLocker warning, permission request descriptions, locale (AEDT/Melbourne), company values, brand and writing standards, Knowledge Manager authority with Content Agent Request template, shared infrastructure references
+2. **Repo renamed** from `common-runtime-resources` to `shared-resources` — GitHub remote updated via `gh repo rename`, local remote URL updated
+3. **ThreatLocker hook consolidated** — canonical copy placed in `claude-hooks/threatlocker-guard.py`. Copies deleted from Knowledge-Manager, Networker, and Product Manager repos. User-level `~/.claude/settings.json` updated to point here
+4. **Dev protocols created** — `dev-protocols/` folder with `BRANCH_PROTOCOLS.md`, `INSTRUCTIONS_FOR_CLAUDE.md`, and `BRANCH_GUIDE_TEMPLATE.md`. Synthesised from Networker (most comprehensive source) and boilerplate across 5 repos
+5. **5 repos updated** — `DEVELOPMENT_PROTOCOLS.md` rewritten in padding-outlook, availability-windows, contact-details-extractor, Proposal-reviewer, and Networker. Replaced dead `../shared-dev-protocols/ai-guidelines/` references with `../shared-resources/dev-protocols/`. Deleted redundant `CLAUDE_PROTOCOLS.md` from all 5
+6. **4 repo CLAUDE.md files trimmed** — removed duplicated ThreatLocker, locale, and KM authority sections from Knowledge-Manager, Networker, Product Manager, and Accelo-agent CLAUDE.md files (now inherited from user-level)
+7. **Per-repo settings.json cleaned** — Knowledge-Manager hook removed (user-level covers it; kept PostToolUse for iteration-log publishing). Networker hook emptied
+8. **This README rewritten** to reflect current repo structure and purpose
 
-### For Existing Setup
+**Lesson learned:** When renaming a folder that contains the hook script referenced by `~/.claude/settings.json`, update the settings.json path **before** renaming. Python exit code 2 (file not found) collides with the hook "block" exit code, creating a deadlock where no tools can execute.
 
-If you already have a `Common/` directory:
-
-1. **Initialize as repository** (already done)
-2. **Add templates and documentation** (included here)
-3. **Verify sensitive files are excluded**:
-   ```bash
-   git status  # credentials.txt should not appear
-   ```
-
-## Configuration Templates
-
-### AWS Credentials Template
-File: `templates/credentials.template.txt`
-```
-AWS_ACCESS_KEY_ID=your_access_key_here
-AWS_SECRET_ACCESS_KEY=your_secret_key_here
-AWS_DEFAULT_REGION=us-west-2
-```
-
-### Application Configuration Template
-File: `templates/config.template.json`
-```json
-{
-  "aws_region": "us-west-2",
-  "api_endpoints": {
-    "bedrock": "https://bedrock.us-west-2.amazonaws.com"
-  },
-  "timeouts": {
-    "api_timeout": 30,
-    "retry_attempts": 3
-  }
-}
-```
-
-## Applications Using These Resources
-
-This runtime resource repository supports:
-
-- **Proposal Reviewer**: AWS Bedrock credentials, Claude API configuration
-- **Networker**: LinkedIn API keys, automation settings
-- **Availability Windows**: Calendar API credentials, timezone configurations
-- **Contact Details Extractor**: Data source API keys, export configurations  
-- **Padding Outlook**: Exchange credentials, calendar settings
-
-## Contributing
-
-### Adding New Resources
-
-1. **Create templates first**:
-   ```bash
-   # Add template with placeholders
-   git add templates/new-config.template.json
-   ```
-
-2. **Document usage**:
-   - Update this README with new resource description
-   - Add to application documentation
-
-3. **Test with applications**:
-   - Verify applications can load new resources
-   - Test with template files before adding real data
-
-### Best Practices
-
-- **Always use templates** for sensitive configurations
-- **Document all resources** in this README
-- **Test changes** with dependent applications
-- **Never commit sensitive data**
-- **Use descriptive commit messages**
-
-## Troubleshooting
-
-### Common Issues
-
-**Applications can't find credentials**:
-- Verify file exists: `C:\Development\common-runtime-resources/credentials.txt`
-- Check file permissions and format
-- Verify relative path from application directory
-
-**Git trying to commit sensitive files**:
-- Check `.gitignore` includes the file pattern
-- Use `git status` to verify exclusion
-- Remove from staging: `git reset HEAD filename`
-
-**Template files not working**:
-- Copy template to actual filename: `cp template.txt actual.txt`
-- Replace placeholders with real values
-- Verify application can parse the format
-
-## Migration from Directory to Repository
-
-If migrating from existing `Common/` directory:
-
-1. **Backup existing files**:
-   ```bash
-   cp -r Common/ Common-backup/
-   ```
-
-2. **Initialize repository** (completed)
-3. **Add documentation and templates** (completed)
-4. **Verify security exclusions work**:
-   ```bash
-   git status  # Should not show credentials.txt
-   ```
-
-5. **Update application references** (if needed)
-6. **Create GitHub repository and push**
-
-## Future Enhancements
-
-- Environment-specific configurations (dev, staging, prod)
-- Encrypted credential storage
-- Automatic credential rotation support
-- Configuration validation scripts
+**Cross-reference:** Knowledge Manager iteration log, Session PL (2026-02-18)
