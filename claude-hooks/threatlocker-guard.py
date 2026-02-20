@@ -19,11 +19,16 @@ ALLOWED_PREFIXES = [
 
 SCRIPT_EXT = re.compile(r"\.(ps1|py|bat|sh|cmd|vbs)$", re.IGNORECASE)
 
-# Regex to find absolute paths with script extensions in bash commands
+# Regex to find absolute paths with script extensions in bash commands.
+# The Unix-style alternative requires a space, quote, or start-of-string before
+# the leading "/" to avoid false positives on relative paths like
+# "scripts/publish_to_sharepoint.py" where "/publish_to_sharepoint.py" would
+# incorrectly match as an absolute path.
 ABS_PATH_RE = re.compile(
     r"[a-zA-Z]:[/\\][^ \"'|;&>\n]+\.(?:ps1|py|bat|sh|cmd|vbs)"
     r"|"
-    r"/[a-zA-Z][^ \"'|;&>\n]*\.(?:ps1|py|bat|sh|cmd|vbs)",
+    r"(?:^|(?<=\s)|(?<=[\"']))/"
+    r"[a-zA-Z][^ \"'|;&>\n]*\.(?:ps1|py|bat|sh|cmd|vbs)",
     re.IGNORECASE,
 )
 
