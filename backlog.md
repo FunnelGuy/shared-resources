@@ -1,16 +1,5 @@
-# Shared Resources Backlog
+# Shared Resources — Backlog
 
-**Last updated:** 2026-02-20
+The master backlog for all agent work is maintained by Head of AI Operations at `../head-of-ai-operations/backlog.md`.
 
-This file is the persistent backlog for the Shared Resources repo. The iteration log records session history; this file tracks what still needs doing.
-
-## How this file works
-
-- Items are grouped by area
-- Status values: **Not started**, **In progress**, **Blocked**, **Done**
-- Remove completed items when they're no longer useful as historical context
-- Add new items as they're discovered during sessions
-
----
-
-*No items yet — add items as work is identified.*
+New work items discovered during sessions should be recorded in this agent's `iteration-log.md`. Head of AI Operations will consolidate them into the master backlog during portfolio reviews.

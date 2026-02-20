@@ -8,12 +8,11 @@ This repo does not have its own agent identity — it is infrastructure that all
 
 ### On session start
 1. Read `iteration-log.md` — understand prior context, recent decisions, and open questions.
-2. Read `backlog.md` — check for pending work items.
-3. Mention any pending items to the operator.
+2. Mention any pending items to the operator.
 
 ### Before session close
 1. Update `iteration-log.md` with a session entry covering: what was done, decisions made, and open questions.
-2. Update `backlog.md` — add new items discovered during the session, mark completed items as done.
+2. Record any new work items discovered during this session in the iteration log (under a "New backlog items" heading or in "Open questions"). Head of AI Operations will consolidate into the master backlog.
 
 ## Inter-agent coordination
 
