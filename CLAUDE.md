@@ -12,7 +12,7 @@ This repo does not have its own agent identity — it is infrastructure that all
 
 ### Before session close
 1. Update `iteration-log.md` with a session entry covering: what was done, decisions made, and open questions.
-2. Record any new work items discovered during this session in the iteration log (under a "New backlog items" heading or in "Open questions"). Head of AI Operations will consolidate into the master backlog.
+2. Include a **Backlog impact** section in the iteration log entry listing all backlog item completions, status changes, and new items discovered. Use explicit item numbers and status transitions (e.g. `1.3 Not started → Done`, `NEW: Description`). Head of AI Operations will update the master backlog from this section.
 
 ## Inter-agent coordination
 
@@ -28,7 +28,7 @@ This repo is the canonical source for inter-agent coordination standards. Key fi
 - **Head of AI Operations** (`../head-of-ai-operations/`) — cross-domain coordination, agent standards.
 - **Knowledge Manager** (`../Knowledge-Manager/`) — SharePoint page CRUD.
 - **Product Manager** (`../Product Manager/`) — product strategy.
-- **Accelo Agent** (`../Accelo-agent/`) — revenue and billing analysis.
+- **Finance Manager** (`../finance-manager/`) — revenue and billing analysis (Accelo + Xero).
 - **HR Manager** (`../hr-manager/`) — recruitment and performance.
 - **Teams Agent Gateway** (`../teams-agent-gateway/`) — shared Lambda for Teams bots.
 - **Networker** (`../Networker/`) — LinkedIn connection management.

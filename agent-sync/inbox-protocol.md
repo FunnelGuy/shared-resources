@@ -90,6 +90,8 @@ No further action needed — this is an FYI that the changes have been made dire
 
 ## Queuing for KM (SharePoint list)
 
+**Always submit immediately after drafting a request.** The JSON file is an input format for the script, not a deliverable. If you draft a request file but do not run `queue_for_km.py`, KM will never receive it.
+
 Use the `queue_for_km.py` script from the Head of AI Operations repo:
 
 ```bash
@@ -116,7 +118,7 @@ Any agent can queue work for any other agent. Common patterns:
 | Head of AI Ops | KM | Publish SP pages, content updates |
 | Head of AI Ops | PM | Knowledge file updates, backlog items |
 | Head of AI Ops | HR Manager | Recruitment/performance tasks |
-| Head of AI Ops | Accelo Agent | Revenue analysis requests |
+| Head of AI Ops | Finance Manager | Revenue analysis requests |
 | PM | KM | Products site page updates (via SP list) |
 | KM | PM | "Products page X is stale — review and advise" |
 | Any agent | Head of AI Ops | Cross-domain coordination, gap reports |
