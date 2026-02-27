@@ -23,6 +23,23 @@ This repo is the canonical source for inter-agent coordination standards. Key fi
 - `dev-protocols/` — shared development standards referenced by individual agent repos.
 - `claude-hooks/threatlocker-guard.py` — canonical ThreatLocker hook, referenced by `~/.claude/settings.json`.
 
+## Credential management
+
+`scripts/resolve_credentials.py` — fetches secrets from AWS Secrets Manager, merges with version-controlled config, and writes local credential files. This makes agent credentials machine-independent.
+
+```bash
+# Example: resolve KM credentials on a new machine
+uv run scripts/resolve_credentials.py \
+  --profile Admin-351596828163 \
+  --agent knowledge-manager \
+  --config ../Knowledge-Manager/configs/sharepoint.json \
+  --output ../Knowledge-Manager/sp-credentials.json
+```
+
+The script uses PEP 723 inline metadata so `uv run` auto-installs boto3. Add new agents by extending the `AGENT_SECRETS` mapping in the script.
+
+For the full credential handling protocol (temp files, Secrets Manager conventions), see `../head-of-ai-operations/knowledge/cross-agent-standards.md` section 9.
+
 ### Related agents (all repos reference this one)
 
 - **Head of AI Operations** (`../head-of-ai-operations/`) — cross-domain coordination, agent standards.
