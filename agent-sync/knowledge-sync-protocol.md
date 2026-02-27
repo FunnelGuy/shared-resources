@@ -145,7 +145,7 @@ Agents queue work for each other instead of requiring Hugh to copy-paste prompts
 2. **If Agent B is KM** (SP page change): Agent A runs `queue_for_km.py` which writes to the SharePoint list via Graph API. This integrates with KM's existing pipeline (Microsoft Form, Power Automate, process_request.py).
 3. **If Agent B is any other agent**: Agent A writes a structured `.md` file to `{Agent B's repo}/inbox/`.
 4. **Next time Hugh opens Agent B**, it checks its queue on startup and mentions pending items.
-5. **Agent B processes the request**, updates its status, adds a resolution note, and moves it to `inbox/processed/`.
+5. **Agent B processes the request** and deletes the file when done. The iteration log records what was done.
 
 ### Trigger
 

@@ -62,9 +62,8 @@ Free-form markdown describing what's needed. Be specific — the target agent sh
 When an agent starts a session:
 1. Check `inbox/` for files with `status: pending`
 2. Process them in priority order (urgent first, then by date)
-3. Update the file's `status` field to `in-progress` while working, then `done` when complete
-4. Add a `## Resolution` section at the bottom with what was done
-5. Move completed files to `inbox/processed/` (create if needed)
+3. Update the file's `status` field to `in-progress` while working
+4. When complete, delete the file. The iteration log records what was done — no need to keep dead files.
 
 ### Example request file
 
