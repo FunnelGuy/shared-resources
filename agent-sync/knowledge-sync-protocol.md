@@ -89,7 +89,7 @@ The script needs KB and data source IDs to trigger ingestion. Pass via CLI args 
 | Trigger | Who flags | Action for Hugh |
 |---------|----------|-----------------|
 | KM publishes or re-extracts SP pages | KM agent | Run sync script |
-| PM updates `knowledge/*.md` files | PM agent | Run sync script |
+| PM updates `knowledge-base/*.md` files | PM agent | Run sync script |
 | HR Manager updates `knowledge-base/*.md` files | HR Manager agent | Run sync script |
 | Core tier file changes for any bot | That agent | Separate manual upload to `agents/{id}/knowledge/` on S3 (not covered by sync script) |
 | Any agent needs an SP page changed | That agent | Draft Content Agent Request for KM to process |

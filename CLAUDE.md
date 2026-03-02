@@ -38,7 +38,7 @@ uv run scripts/resolve_credentials.py \
 
 The script uses PEP 723 inline metadata so `uv run` auto-installs boto3. Add new agents by extending the `AGENT_SECRETS` mapping in the script.
 
-For the full credential handling protocol (temp files, Secrets Manager conventions), see `../head-of-ai-operations/knowledge/cross-agent-standards.md` section 9.
+For the full credential handling protocol (temp files, Secrets Manager conventions), see `../head-of-ai-operations/knowledge-base/cross-agent-standards.md` section 9.
 
 ### Related agents (all repos reference this one)
 

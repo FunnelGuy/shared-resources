@@ -4,7 +4,7 @@ How agents queue work for each other. Last updated 2026-02-28.
 
 ## When to create a work item
 
-Before creating any work item, follow the decision tree in `../head-of-ai-operations/knowledge/cross-agent-standards.md` (section 4b — Work Item Creation Standards). Key rules:
+Before creating any work item, follow the decision tree in `../head-of-ai-operations/knowledge-base/cross-agent-standards.md` (section 4b — Work Item Creation Standards). Key rules:
 
 1. **Handle it yourself** if it's in your domain and you can do it now.
 2. **Add to your own backlog** if it's in your domain but out of scope for this session.
