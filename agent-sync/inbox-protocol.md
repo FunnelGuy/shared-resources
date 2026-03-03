@@ -70,11 +70,17 @@ Free-form markdown describing what's needed. Be specific — the target agent sh
 
 ### Processing
 
+**Important limitation:** Inbox items are not automatically triggered. They sit in the target agent's `inbox/` directory until Hugh opens a session with that agent and the agent follows its startup protocol. There is no notification, no cron job, no push mechanism. If Hugh doesn't open a KM session for two weeks, a KM inbox item waits two weeks.
+
+**When queuing work for another agent, tell Hugh honestly:** "Queued for [agent]. It will be processed next time you open a [agent] session — remind it to check its inbox if it doesn't."
+
 When an agent starts a session:
 1. Check `inbox/` for files with `status: pending`
 2. Process them in priority order (urgent first, then by date)
 3. Update the file's `status` field to `in-progress` while working
 4. When complete, delete the file. The iteration log records what was done — no need to keep dead files.
+
+**Head of AI Operations scans all agent inboxes on every session startup** (not just during full portfolio briefings). This gives Hugh a single view of what's waiting where, without having to open each agent individually.
 
 ### Example request file
 
