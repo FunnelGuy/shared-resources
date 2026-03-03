@@ -10,6 +10,17 @@ This repo does not have its own agent identity — it is infrastructure that all
 1. Read `iteration-log.md` — understand prior context, recent decisions, and open questions.
 2. Mention any pending items to the operator.
 
+### Context limit management — HARD STOP protocol
+**Hitting 100% context is a critical failure.** When the system compresses prior messages, this is a HARD STOP.
+1. **Stop all current work immediately.** Do not finish the current task. Do not ask questions about next steps.
+2. Inform the operator: "Context limit reached. Stopping now and writing handoff."
+3. Update the iteration log with all work completed so far.
+4. Write a continuation file to `inbox/` with `type: continuation` containing: what was done, what remains, any state needed (file paths, IDs, decisions made).
+5. Commit and push all changes.
+6. Tell the operator to start a new session. **This is your last message.**
+
+**Proactive pacing:** After completing 3+ substantial steps, offer a checkpoint: "Good stopping point — shall I close out or continue?" See `../head-of-ai-operations/knowledge-base/cross-agent-standards.md` for full protocol.
+
 ### Before session close
 1. Update `iteration-log.md` with a session entry covering: what was done, decisions made, and open questions.
 2. Include a **Backlog impact** section in the iteration log entry listing all backlog item completions, status changes, and new items discovered. Use explicit item numbers and status transitions (e.g. `1.3 Not started → Done`, `NEW: Description`). Head of AI Operations will update the master backlog from this section.
