@@ -8,8 +8,8 @@ Before creating any work item, follow the decision tree in `../head-of-ai-operat
 
 1. **Handle it yourself** if it's in your domain and you can do it now.
 2. **Add to your own backlog** if it's in your domain but out of scope for this session.
-3. **Write an inbox request** to the correct agent if it's another agent's domain.
-4. **Route to Head of AI Operations** if it's cross-domain, unclear, or you're unsure where it belongs.
+3. **Write an inbox request** to the correct agent if it's another agent's domain — including infrastructure work scoped to that agent (e.g., gateway config changes go to agent-gateway's inbox, not Head of AI Ops).
+4. **Route to Head of AI Operations** if it's cross-domain, unclear ownership, or standards/conventions work.
 
 **Never create work items in external systems (JIRA, Confluence) for agent infrastructure work.** JIRA FUN is Funnel Plan only. Agent ops work goes in agent backlogs and inboxes. See the domain boundary rules in cross-agent-standards.md section 4b.
 
