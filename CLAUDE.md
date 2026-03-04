@@ -23,7 +23,8 @@ This repo does not have its own agent identity — it is infrastructure that all
 
 ### Before session close
 1. Update `iteration-log.md` with a session entry covering: what was done, decisions made, and open questions.
-2. Include a **Backlog impact** section in the iteration log entry listing all backlog item completions, status changes, and new items discovered. Use explicit item numbers and status transitions (e.g. `1.3 Not started → Done`, `NEW: Description`). Head of AI Operations will update the master backlog from this section.
+2. Include a **Decisions made** section if any new conventions, standards, or architectural choices were established. Head of AI Operations checks this to propagate decisions to `cross-agent-standards.md`. Write "No new conventions." if none.
+3. Include a **Backlog impact** section in the iteration log entry listing all backlog item completions, status changes, and new items discovered. Use explicit item numbers and status transitions (e.g. `1.3 Not started → Done`, `NEW: Description`). Head of AI Operations will update the master backlog from this section.
 
 ## Inter-agent coordination
 
