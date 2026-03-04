@@ -21,6 +21,10 @@ This repo does not have its own agent identity — it is infrastructure that all
 
 **Proactive pacing:** After completing 3+ substantial steps, offer a checkpoint: "Good stopping point — shall I close out or continue?" See `../head-of-ai-operations/knowledge-base/cross-agent-standards.md` for full protocol.
 
+### Claiming backlog items
+
+**When starting work on a backlog item, immediately add a log entry to `iteration-log.md`** stating which item you're working on (e.g. "Started work on 5.30 — [description]"). Do this before doing any actual work on the item. This prevents duplicate work when Hugh opens parallel sessions.
+
 ### Before session close
 1. Update `iteration-log.md` with a session entry covering: what was done, decisions made, and open questions.
 2. Include a **Decisions made** section if any new conventions, standards, or architectural choices were established. Head of AI Operations checks this to propagate decisions to `cross-agent-standards.md`. Write "No new conventions." if none.
