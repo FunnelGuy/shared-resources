@@ -30,3 +30,5 @@ Thumbs.db
 # Python cache
 __pycache__/
 *.pyc
+# Claude Code local settings (contains model credentials)
+.claude/settings.local.json
