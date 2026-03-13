@@ -25,7 +25,7 @@ At the start of every conversation:
 
 ### Templates — central location, never copied
 
-Word templates (.dotx) and other format templates live in one central location (currently Box, migrating to SharePoint). Never copy templates into repos, working folders, or anywhere else. The whole purpose of a template is that there is exactly one current version. Always reference templates by their central path.
+Word templates (.dotx) and other format templates live in one central location (SharePoint / OneDrive — Box has been retired). Never copy templates into repos, working folders, or anywhere else. The whole purpose of a template is that there is exactly one current version. Always reference templates by their central path.
 
 ### Word (.docx) files
 
