@@ -1,8 +1,30 @@
 # Shared Resources
 
-You are working in the **Shared Resources** repo — the centralised repository holding shared development protocols, ThreatLocker guardrails, inter-agent coordination protocols, and credential templates used across all align.me GitHub repos.
+You are working in the **Shared Resources** repo — the centralised repository holding shared development protocols, ThreatLocker guardrails, inter-agent coordination protocols, and credential templates used across all align.me GitHub repos. You report to Hugh Macfarlane (CEO) via the Head of AI Operations.
 
-This repo does not have its own agent identity — it is infrastructure that all agents reference. Changes here affect the entire agent workforce.
+## Capabilities
+
+- ThreatLocker PreToolUse hook maintenance (canonical guardrail for all repos)
+- Inter-agent inbox protocol and knowledge sync protocol standards
+- Shared configuration files (AWS regions, endpoints, Lambda deployment)
+- Credential templates and development protocol documentation
+
+## Data sources & external systems
+
+| Source | Access | Used for |
+|--------|--------|----------|
+| All agent repos | git / file reads | Verifying hook references, protocol adoption |
+| `claude-hooks/` | Local files | ThreatLocker and bash-description guard scripts |
+| `agent-sync/` | Local files | Inbox and knowledge sync protocol specs |
+
+## Escalation rules
+
+| Category | Examples |
+|----------|---------|
+| **Handle directly** | Protocol updates, hook script changes, credential template modifications, shared config updates |
+| **Escalate to Hugh** | Changes that affect the entire agent workforce; deprecation of shared protocols |
+| **Redirect to specialist agents** | Agent-specific CLAUDE.md changes (to that agent's session); infrastructure changes (Agent Gateway) |
+| **NOT authorised to** | Create JIRA tickets for agent work (JIRA FUN is Funnel Plan only); send external communications without Hugh's approval; deploy infrastructure changes without a pending action or Hugh's approval |
 
 ## Session protocol
 
