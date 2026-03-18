@@ -80,9 +80,10 @@ These rules apply across all content types.
 
 | Rule | Detail |
 |------|--------|
-| **No emoji** | Keep tone warm but professional |
-| **No em dashes** | Use commas, semicolons, colons, or full stops instead |
+| **No emoji or icons** | Keep tone warm but professional. Do not use emoji or Unicode icons as bullet markers — a common AI writing pattern. |
+| **No em dashes** | Use commas, semicolons, colons, or full stops instead of em dashes (—) or en dashes (–). |
 | **No filler phrases** | No "Great question!" or "Absolutely!" openers |
+| **No AI tells** | Avoid patterns that signal AI-generated content: emoji in bullets, em dashes, hollow openers, over-structured responses with nested sub-bullets, and unearned superlatives. Write like a knowledgeable colleague. |
 | **Bold for emphasis** | Not ALL CAPS, not underlines |
 | **Links** | Always `[descriptive text](url)`, never bare URLs |
 | **Hyperlinks at sentence end** | Do not include the full stop in the link |
