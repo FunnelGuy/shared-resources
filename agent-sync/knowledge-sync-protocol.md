@@ -77,7 +77,7 @@ Each bot's manifest (`agent-gateway/src/agents/{id}/manifest.json`) defines whic
 A single command refreshes the RAG corpus for all bots:
 
 ```bash
-python "c:/Users/HughMacfarlane/GitHub/agent-gateway/scripts/sync_knowledge_to_s3.py" --profile Admin-351596828163
+python3 "c:/Users/HughMacfarlane/GitHub/agent-gateway/scripts/sync_knowledge_to_s3.py" --profile Admin-351596828163
 ```
 
 Options: `--dry-run` (preview without uploading), `--skip-ingestion` (upload only, don't trigger Bedrock re-ingestion).

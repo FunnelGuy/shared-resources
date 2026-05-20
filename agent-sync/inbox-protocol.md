@@ -112,17 +112,17 @@ Use the `queue_for_km.py` script from the Head of AI Operations repo:
 
 ```bash
 # From any agent — submit via JSON file (avoids URL-in-args issues with ThreatLocker)
-python "../head-of-ai-operations/scripts/queue_for_km.py" --from-file request.json
+python3 "../head-of-ai-operations/scripts/queue_for_km.py" --from-file request.json
 
 # Or with CLI args (if no URLs involved)
-python "../head-of-ai-operations/scripts/queue_for_km.py" \
+python3 "../head-of-ai-operations/scripts/queue_for_km.py" \
     --type Modify \
     --title "Update service pricing" \
     --site products \
     --description "Change Strategy Sprint from 4500 to 5200"
 
 # List pending KM requests
-python "../head-of-ai-operations/scripts/queue_for_km.py" --list-pending
+python3 "../head-of-ai-operations/scripts/queue_for_km.py" --list-pending
 ```
 
 ## Who can queue for whom
