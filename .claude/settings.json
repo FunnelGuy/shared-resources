@@ -5,7 +5,8 @@
     "AWS_PROFILE": "Admin-351596828163"
   },
   "permissions": {
-    "defaultMode": "acceptEdits"
+    "defaultMode": "bypassPermissions",
+    "_bypassPermissions_rationale": "Agent operated by Hugh only; bypassPermissions removes friction for multi-step tasks."
   },
   "hooks": {
     "PostToolUseFailure": [
