@@ -42,21 +42,40 @@ _NEVER_BASELINE_FILE_MARKERS = (".mcp.json", ".key", ".pfx", ".pem", "credential
 
 
 def scan_head(repo_dir: Path, config: str) -> list[dict]:
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as rep:
-        report = rep.name
-    try:
-        proc = subprocess.run(
-            ["gitleaks", "dir", str(repo_dir), "--config", config,
-             "--report-format", "json", "--report-path", report,
-             "--no-banner", "--exit-code", "0"],
-            capture_output=True, text=True, timeout=600)
-        if proc.returncode != 0:
-            raise RuntimeError(f"gitleaks failed (rc={proc.returncode}): {proc.stderr.strip()[:200]}")
-        import json
-        with open(report) as fh:
-            return json.load(fh)
-    finally:
-        Path(report).unlink(missing_ok=True)
+    """Scan the repo's COMMITTED content (HEAD), producing RELATIVE-path fingerprints.
+
+    Two correctness requirements the baseline depends on (both learned the hard way, 5.740 rollout):
+      1. RELATIVE fingerprints. gitleaks' dir-mode Fingerprint is `<path>:<rule>:<line>`. If we scan
+         by absolute path, the fingerprint carries the local abs path and will NEVER match a CI run
+         (which does `gitleaks dir .` in a checkout → relative paths). So we `git archive` HEAD into a
+         temp dir and run gitleaks with cwd=that dir scanning `.` — identical to what CI sees.
+      2. COMMITTED content only. Scanning the live working tree pulls in gitignored files (.mcp.json,
+         sp-credentials.json) that CI never sees — polluting the baseline with entries that can't
+         match and, worse, listing real local secrets in a committed baseline file. git archive
+         excludes anything not committed.
+    """
+    import json
+    default = subprocess.run(["git", "-C", str(repo_dir), "symbolic-ref", "--short", "HEAD"],
+                             capture_output=True, text=True).stdout.strip() or "HEAD"
+    with tempfile.TemporaryDirectory(prefix="baseline-") as tree:
+        arch = subprocess.run(f"git -C {repo_dir} archive {default} | tar -x -C {tree}",
+                              shell=True, capture_output=True, text=True)
+        if arch.returncode != 0:
+            raise RuntimeError(f"git archive failed: {arch.stderr.strip()[:200]}")
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as rep:
+            report = rep.name
+        try:
+            proc = subprocess.run(
+                ["gitleaks", "dir", ".", "--config", config,
+                 "--report-format", "json", "--report-path", report,
+                 "--no-banner", "--exit-code", "0"],
+                cwd=tree, capture_output=True, text=True, timeout=600)
+            if proc.returncode != 0:
+                raise RuntimeError(f"gitleaks failed (rc={proc.returncode}): {proc.stderr.strip()[:200]}")
+            with open(report) as fh:
+                return json.load(fh)
+        finally:
+            Path(report).unlink(missing_ok=True)
 
 
 def partition(findings: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -75,6 +94,10 @@ def main():
     ap.add_argument("--repos", nargs="*")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--write", action="store_true", help="write .gitleaks-baseline.json")
+    ap.add_argument("--include-genuine", action="store_true",
+                    help="also baseline the genuine-classified COMMITTED findings (only after each "
+                         "has been manually verified benign/already-rotated — makes CI green when the "
+                         "residual is confirmed non-live; the genuine list is always printed either way)")
     args = ap.parse_args()
 
     import json
@@ -89,7 +112,7 @@ def main():
     else:
         print("Specify --repos or --all", file=sys.stderr); sys.exit(2)
 
-    print(f"P5 baseline generation — write={args.write}\n")
+    print(f"P5 baseline generation — write={args.write} include_genuine={args.include_genuine}\n")
     for t in targets:
         t = Path(t)
         try:
@@ -98,11 +121,18 @@ def main():
             print(f"  {t.name:28} ERROR {exc}")
             continue
         benign, genuine = partition(findings)
-        flag = f"  <-- {len(genuine)} GENUINE (rotate, do NOT baseline)" if genuine else ""
-        print(f"  {t.name:28} {len(benign):4d} baseline / {len(genuine):3d} genuine{flag}")
-        if args.write and benign:
-            (t / ".gitleaks-baseline.json").write_text(json.dumps(benign, indent=2))
-            print(f"      wrote {t.name}/.gitleaks-baseline.json ({len(benign)} entries)")
+        to_write = benign + genuine if args.include_genuine else benign
+        flag = f"  <-- {len(genuine)} genuine{' (INCLUDED)' if args.include_genuine else ' (excluded — CI stays red until verified/scrubbed)'}" if genuine else ""
+        print(f"  {t.name:28} {len(benign):4d} benign / {len(genuine):3d} genuine{flag}")
+        for g in genuine:
+            print(f"        genuine: {g.get('RuleID')} {g.get('File')}:{g.get('StartLine')}")
+        if args.write:
+            if to_write:
+                (t / ".gitleaks-baseline.json").write_text(json.dumps(to_write, indent=2))
+                print(f"      wrote {t.name}/.gitleaks-baseline.json ({len(to_write)} entries)")
+            else:
+                # No committed findings: ensure no stale baseline lingers.
+                (t / ".gitleaks-baseline.json").unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
