@@ -36,6 +36,14 @@ on:
 jobs:
   secret-scan:
     uses: {shared_repo}/.github/workflows/secret-scan.yml@{sha}
+    with:
+      # The caller MUST pass the config source explicitly. github.workflow_ref inside a CALLED
+      # reusable workflow resolves to the top-level CALLER's ref (not the reusable workflow's own),
+      # so the "blank = derive" path checks out the caller repo and fails-closed on a missing
+      # config. Passing repo+ref here is the only reliable, tenant-agnostic self-reference: it is
+      # the SAME owner/repo@sha as the `uses:` line above.
+      config_repo: {shared_repo}
+      config_ref: {sha}
 """
 
 
