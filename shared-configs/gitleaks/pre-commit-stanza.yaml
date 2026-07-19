@@ -1,0 +1,24 @@
+# Pre-commit stanza — spec 5.740 Tier 1 (THE BLOCK, prevention).
+#
+# Add this to each repo's .pre-commit-config.yaml. gitleaks runs BEFORE the commit is created,
+# locally, catching a secret at the only point it can be stopped before reaching the remote.
+# Best-effort and bypassable by `--no-verify`/`SKIP=gitleaks` — an honest block for the normal
+# path, not a guarantee. The CI job (Tier 2) + RM R1 (Tier 3) detect what bypasses it.
+#
+# The hook uses the PINNED gitleaks version (must match the fleet pin in .gitleaks.toml / the CI
+# workflow — fleet-pattern #17). It reads the repo-local `.gitleaks.toml` that the rollout script
+# vendors from the single source in shared-resources. A stale local copy is a fast-catch
+# convenience only; CI + RM always scan with the current shared config, so the authoritative
+# detection never drifts.
+#
+# To bypass a confirmed false positive without disabling the hook: add a `.gitleaksignore`
+# fingerprint or an inline `gitleaks:allow` comment (both honoured by the shared config).
+
+-   repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+    -   id: gitleaks
+        # Use the vendored shared config (repo root). gitleaks' pre-commit hook auto-detects
+        # .gitleaks.toml at the repo root, so no extra args are needed once the rollout script
+        # has placed it there.
+        name: gitleaks (fleet secret-scan, spec 5.740)
