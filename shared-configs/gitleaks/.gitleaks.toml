@@ -1,0 +1,269 @@
+# Fleet secret-detection config — spec 5.740 (Tier 1 pre-commit, Tier 2 CI, Tier 3 RM R1, Tier 4 backfill)
+#
+# ONE shared config, ONE pinned engine, FOUR invocation points (fleet-pattern #9, #17).
+# This file is vendored into the reusable CI workflow at a pinned SHA (Option A, challenger fix:
+# no runtime curl that could fail-open) and read by RM R1's gap-scan (config travels with the
+# workflow / Lambda package — a config that won't load = the job errors, fail-closed).
+#
+# ==========================================================================================
+# PINNED ENGINE VERSION — DO NOT bump without re-running the full-fleet FP measurement (SC1).
+# gitleaks entropy is version-sensitive (spec Phase-1: an 8.20.1->8.24.3 upgrade turned a clean
+# repo into "all dictionary words flagged" on the SAME config). Pin fleet-wide (fleet-pattern #17).
+# Pinned to gitleaks 8.30.1 — the version P1 was built and FP-measured against.
+# ==========================================================================================
+
+title = "align.me fleet secret-scan (spec 5.740)"
+
+# Inherit gitleaks' built-in rule pack (AWS keys, GitHub PATs, Slack tokens, private-key blocks,
+# JWTs, etc.) AND layer our custom value-based rules on top. useDefault=true means a known
+# provider secret is still caught even if our custom rules don't fire.
+[extend]
+useDefault = true
+
+# ------------------------------------------------------------------------------------------
+# CUSTOM RULE — the exact leak class we had: a bare Microsoft Entra (Azure AD) client secret.
+#
+# Design (spec Phase-1, challenger fix): VALUE-based, NOT context/shape-anchored. TruffleHog's
+# Azure detector keys on an 'azure'/'microsoft' keyword nearby and MISSES real Entra secrets that
+# have no such keyword (the exact KM failure — the secret sat in settings.local.json as a bare
+# value). We therefore key on the VALUE: an Entra client secret is up to 40 chars from the charset
+# [A-Za-z0-9._~-] with high entropy. We match a >=34-char run of that charset and gate on Shannon
+# entropy, so the rule fires on the secret's shape regardless of the file shape or surrounding text.
+# Tuned DOWN by the allowlist + stopwords below, NEVER by raising entropy (spec: dictionary words
+# out-score real creds, so entropy alone cannot separate them).
+# ------------------------------------------------------------------------------------------
+[[rules]]
+id = "alignme-azure-entra-client-secret"
+description = "High-entropy Azure/Entra-shaped client secret (value-based, no keyword anchor)"
+# 34-40 char run of the Entra charset [A-Za-z0-9._~-], bounded so it does not swallow longer
+# base64/hex blobs (caught by the generic rule / gitleaks defaults).
+#
+# CHARACTER-CLASS GATE (measured-FP fix, 2026-07-19): a raw charset+entropy match floods on
+# kebab-case slugs, file paths and SharePoint URLs (2011 FPs over one repo). The clean empirical
+# separator (planted secrets vs FP slugs): real Entra secrets mix ALL FOUR char classes with
+# many uppercase+digits (entropy 4.85-4.92, 4 classes); slugs/paths are lower+special kebab with
+# ~0 uppercase (entropy 3.67-4.09, 2-3 classes). RE2 has no lookahead, so we ENCODE the gate as
+# alternation branches that each require >=1 uppercase AND >=1 digit somewhere in the run:
+#   [class]* UPPER [class]* DIGIT [class]*   |   [class]* DIGIT [class]* UPPER [class]*
+# Both branches are length-bounded to the 34-40 window. This keys on the VALUE's density, not on
+# any file shape or keyword (still no TruffleHog-style keyword anchor). Entropy raised to 4.5
+# (below the 4.85 true floor, above the 4.09 FP ceiling) — tuned by structure, not entropy alone.
+regex = '''\b([A-Za-z0-9._~-]{0,38}[A-Z][A-Za-z0-9._~-]*[0-9][A-Za-z0-9._~-]{0,38}|[A-Za-z0-9._~-]{0,38}[0-9][A-Za-z0-9._~-]*[A-Z][A-Za-z0-9._~-]{0,38})\b'''
+entropy = 4.5
+keywords = []  # deliberately empty — no keyword anchor (that is the TruffleHog trap we avoid)
+
+  [rules.allowlist]
+  # regexTarget = "match" applies these to the MATCHED string, not the whole line.
+  regexTarget = "match"
+  # Fleet-benign shapes that fall inside the 34-40 charset window. Grounded in real fleet
+  # strings grepped 2026-07-19 (spec SC1 "30 known-benign fleet strings" seed). These are
+  # the empirical FP candidates for an entropy rule over this charset.
+  regexes = [
+    # Bedrock inference-profile / model IDs (au|us|apac).anthropic.claude-...
+    '''(au|us|apac|eu)\.anthropic\.''',
+    '''anthropic\.claude-''',
+    '''claude-(opus|sonnet|haiku|fable)''',
+    # agent-fleet MCP tool names
+    '''mcp__agent-fleet__''',
+    '''ask_(fm|hr|km|pm|tm|sm|va|sales|content|legal|coceo|hoao|im|fc|cm|aws)''',
+    # Secrets-Manager REFERENCE strings (path refs, never the secret value itself) —
+    # never flag a reference to where a secret lives (spec: exclude Secrets-Manager refs).
+    '''(claude-code|teams-bot|fleet)/[a-z0-9-]+/[a-z0-9-]+''',
+    # Notion/OS entity IDs used as config (dashed hex, benign identifiers)
+    '''[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}''',
+    # Permission-rule / MCP filenames and dotted tool identifiers
+    '''__[a-z_]+__''',
+    # CloudFormation-generated resource names contain a ResourceType word followed by a '-' and
+    # the random suffix, e.g. GatewayFunctionRole-9zbn5s6UQ48W. Anchor on the TYPE-WORD + '-' so
+    # this cannot mute a bare secret that merely happens to contain the word 'Role' (round-4 fix:
+    # the old bare '(Role|Function|...)' muted any secret embedding those English words).
+    '''(Role|Function|Policy|Bucket|Table|Queue|Topic|Stack)-[A-Za-z0-9]{6,}''',
+    # Microsoft Graph resource-ID FRAGMENTS the 34-40 window slices from a longer ID. These are
+    # PUBLIC identifiers, tenant-agnostic by their internal markers. Matched on the MATCH (never
+    # the line), so a real secret on the same line is unaffected.
+    #   drive-ID fragment: contains the SharePoint drive delimiter run '4mg-' is too specific;
+    #   instead recognise the Graph base64url ID body that always includes the mixed '_-' pair
+    #   AND a '~'/'!' would be a different rule. We key on the canonical Outlook/SP ID prefixes
+    #   when the window happens to include them.
+    '''^b![A-Za-z0-9_-]{20,}''',
+    '''^A[AQ]Mk[A-Za-z0-9_/+=-]{18,}''',
+    '''^01[A-Z2-7]{28,}''',
+    # Notion object IDs — exactly 32 lowercase hex (dashless). A real credential is essentially
+    # never pure-lowercase-hex of exactly 32 chars (MD5/uuid-hex shape, not a token).
+    '''^[0-9a-f]{32}$''',
+    # NOTE (round-5 challenger fix, NEW-1): a "Google Sheets ID" shape recognizer
+    # ('^1[A-Za-z0-9_-]{42,43}$') was REMOVED — it silently muted any keyword-less 43-44 char
+    # base64url SECRET starting with '1' (~1/62 of that length-class), sitting in the exact
+    # keyword-less blind spot these custom rules exist to cover. Detection integrity wins over a
+    # handful of Sheets-ID FPs, which are absorbed by per-repo baselines (P5) like drive-ID
+    # fragments. Do NOT re-add a shape-only Sheets recognizer.
+    # Exchange/EWS folder + item IDs used as code constants — a self-contained token carrying the
+    # Exchange base64 marker 'AQ[A-Z]' and ending in the doubled-'A' change-key suffix. Anchored
+    # to the WHOLE match ('^...$'), so it mutes only when the ENTIRE token is the Exchange ID —
+    # it cannot mute a real secret that merely ends in 'AA' on a shared line (round-4 FN fix).
+    '''^[A-Za-z0-9_-]*AQ[A-Z][A-Za-z0-9+/_=-]+AA[A-Za-z0-9]?$''',
+    # AWS profile value — 'Admin-<12-digit account id>' is a profile name + account id, both public.
+    '''^[A-Za-z]+-[0-9]{12}$''',
+    # NOTE: SharePoint drive-ID MID-fragments (sliced from a 'b!...' ID that appears in prose/docs,
+    # e.g. iteration logs) are deliberately NOT allowlisted here. A recognizer broad enough to
+    # catch them (requiring only '_'+'-', which a base64url SECRET also has) would be an FN hole.
+    # These residual doc-FPs are absorbed by per-repo BASELINES (spec P5) instead — RM re-scans
+    # baselined entries weekly, so a real secret can never permanently hide behind one.
+  ]
+  stopwords = [
+    # NOTE (round-4 fix): stopwords match a SUBSTRING of the matched secret, so a real secret that
+    # embeds one of these words is muted. Keep this list to tokens that (a) are common in benign
+    # high-entropy fleet IDs and (b) are vanishingly unlikely inside a real random secret. Removed
+    # 'example'/'placeholder' (a real secret could contain them) — those belong in a path/context
+    # rule, not a value stopword.
+    "anthropic",
+    "claude",
+    "opus",
+    "sonnet",
+    "haiku",
+    "fable",
+    "bedrock",
+    "inference-profile",
+    "agent-fleet",
+    "knowledge-manager",
+    "head-of-ai",
+  ]
+
+# ------------------------------------------------------------------------------------------
+# CUSTOM RULE — generic high-entropy long token (base64/hex API keys, bearer tokens) that
+# gitleaks' keyword-anchored default rules miss when no provider keyword is nearby.
+# Longer window (40+) + higher entropy so ordinary prose/identifiers do not trip it.
+# ------------------------------------------------------------------------------------------
+[[rules]]
+id = "alignme-generic-high-entropy-token"
+description = "Generic high-entropy long token, no provider keyword (value-based)"
+# Same char-class gate as the Entra rule (measured-FP fix): the raw charset flooded on URLs and
+# file paths (files.pythonhosted.org/..., SharePoint site paths — 846 FPs). Those are lower-
+# dominant with '/' path separators; real base64/hex tokens mix upper+digits densely. Require
+# >=1 uppercase AND >=1 digit in the run, and DROP '/' from the charset (a token containing a
+# path separator is a URL/path, not a secret; genuine base64 padding '=' and '+' stay).
+regex = '''\b([A-Za-z0-9+_=~.-]{0,118}[A-Z][A-Za-z0-9+_=~.-]*[0-9][A-Za-z0-9+_=~.-]{0,118}|[A-Za-z0-9+_=~.-]{0,118}[0-9][A-Za-z0-9+_=~.-]*[A-Z][A-Za-z0-9+_=~.-]{0,118})\b'''
+entropy = 4.5
+keywords = []
+
+  [rules.allowlist]
+  regexTarget = "match"
+  regexes = [
+    '''(au|us|apac|eu)\.anthropic\.''',
+    '''anthropic\.claude-''',
+    '''mcp__agent-fleet__''',
+    # long ARNs (account-id + resource path) are config, not secrets
+    '''arn:aws:''',
+    # git SHAs / long hex identifiers used as config refs
+    '''^[0-9a-f]{40}$''',
+    # Secrets-Manager reference paths
+    '''(claude-code|teams-bot|fleet)/[a-z0-9-]+/''',
+    # CloudFormation resource names — anchored on TYPE-WORD + '-' + suffix (round-4 fix: not a
+    # bare word that would mute a secret embedding 'Role'/'Function').
+    '''(Role|Function|Policy|Bucket|Table|Queue|Topic|Stack)-[A-Za-z0-9]{6,}''',
+    # Base64-encoded BINARY blobs (inline PNG/JPEG/GIF/PDF/WOFF). The window slices a media blob
+    # into 40-120-char fragments; recognise the blob by its file-type MAGIC BYTES at the run start.
+    # Match-targeted (never the line), so a real secret is never muted by a nearby image.
+    '''^iVBORw0KGgo''',      # PNG
+    '''^/9j/[A-Za-z0-9+/]''',  # JPEG
+    '''^R0lGOD''',           # GIF
+    '''^JVBERi0''',          # PDF
+    '''^(d09GR|d09GMg)''',   # WOFF/WOFF2
+    '''^AAEAAA''',           # TrueType/OpenType font
+    # Graph resource-ID fragments + Notion/Sheets IDs (same safe recognizers as the Entra rule).
+    '''^b![A-Za-z0-9_-]{20,}''',
+    '''^A[AQ]Mk[A-Za-z0-9_/+=-]{18,}''',
+    '''^01[A-Z2-7]{28,}''',
+    '''^[0-9a-f]{32}$''',
+    # (round-5 NEW-1: Sheets shape recognizer removed here too — see the Entra rule note.)
+  ]
+  stopwords = [
+    "anthropic",
+    "claude",
+    "inference-profile",
+    "arn:aws",
+  ]
+
+# ==========================================================================================
+# GLOBAL ALLOWLIST — paths and shapes excluded fleet-wide, applied to every rule (incl. the
+# inherited default pack). This is where broad FP sources are muted (spec: tune by allowlist,
+# not entropy). A muted PATH is not a permanent exemption: a secret found under a denylisted
+# path by the one-off backfill (Tier 4) is still a finding (spec Tier-3 vendored-path handling).
+# ==========================================================================================
+[allowlist]
+description = "Fleet-wide benign paths (regexTarget defaults to the MATCH, never the line)"
+# CRITICAL (round-4 challenger fix): this global block does NOT set regexTarget = "line".
+# Line-targeting silently mutes a REAL secret whose source line merely contains a benign marker
+# (a filename, a Teams @thread id, a base64 value ending in 'AAA'). That is an unbounded FN hole.
+# Path-based mutes are inherently safe (they scope by file, not by secret value). The value-shape
+# mutes (Graph IDs, image blobs, canvas IDs) live in a SEPARATE [[rules]]-level match-targeted
+# allowlist section below, so each only ever mutes the MATCHED token, never a co-located secret.
+paths = [
+  # Vendored dependencies — enumerated denylist (spec Tier-3, challenger fix). Reduces weekly
+  # cost; NOT a permanent exemption (backfill still scans these; a new vendor shape not listed
+  # here is scanned = fail-toward-scanning).
+  '''(^|/)node_modules/''',
+  '''(^|/)site-packages/''',
+  '''(^|/)\.venv/''',
+  '''(^|/)venv/''',
+  '''.*\.libs/''',
+  '''(^|/)web-ui/node_modules/''',
+  '''(^|/)\.git/''',
+  '''(^|/)dist/''',
+  '''(^|/)build/''',
+  '''(^|/)__pycache__/''',
+  # Lambda-vendored dependency trees. The fleet vendors pip deps INTO the deploy zip under a
+  # `package/` (or `src/` for gateway) subtree via `pip install -t` (spec/CLAUDE.md deploy step).
+  # agent-gateway's kb-sync-box Lambda alone puts 4478 vendored files (Box SDK, certifi, PIL,
+  # cryptography) here — 3306 FPs came from ONE vendored CA bundle. These are third-party code,
+  # not our secrets; the Tier-4 backfill still scans them (denylist reduces WEEKLY cost only).
+  '''(^|/)lambdas/[^/]+/package/''',
+  '''(^|/)package/(certifi|cryptography|box_sdk_gen|PIL|urllib3|requests|charset_normalizer|idna)/''',
+  # Some Lambdas vendor pip deps DIRECTLY into the function dir (no package/ subdir), e.g.
+  # lambdas/weekly-prep/PIL/, /pdfminer/, /pypdfium2/. Enumerate the known third-party lib roots
+  # wherever they appear so their code is not mistaken for our secrets. New vendor dirs not listed
+  # here are still scanned (fail-toward-scanning) — the denylist reduces weekly cost, not coverage.
+  '''(^|/)(PIL|pdfminer|pypdfium2|pypdfium2_cli|pypdfium2_raw|numpy|pandas|pydantic|boto3|botocore|dateutil|six|pytz|yaml|jinja2|markupsafe|openpyxl|lxml|bs4|cryptography|certifi|urllib3|charset_normalizer|idna|requests|attr|attrs)/''',
+  # CA-certificate bundles — PEM cert stores are public trust anchors, never a secret source.
+  '''(^|/)cacert\.pem$''',
+  '''.*/certifi/.*\.pem$''',
+  # Bundled third-party libs inside src/ (gateway vendors PIL, pptx media tables, etc.)
+  '''(^|/)src/PIL/''',
+  '''(^|/)src/pptx/''',
+  # Test/eval fixtures that intentionally contain planted secrets (so the eval corpus itself
+  # does not wall off commits). RM R1's eval scan targets these explicitly; the gate ignores them.
+  '''(^|/)tests/fixtures/secret-eval/''',
+  # Dependency lockfiles — content-address hashes (sha256 of packages), not secrets. A committed
+  # lockfile hash is a benign, reproducible artefact; scanning it is pure FP noise.
+  '''(^|/)uv\.lock$''',
+  '''(^|/)poetry\.lock$''',
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)yarn\.lock$''',
+  '''(^|/)Cargo\.lock$''',
+  '''(^|/)pnpm-lock\.yaml$''',
+  '''(^|/)Pipfile\.lock$''',
+  # SharePoint page/canvas EXPORTS — machine-generated snapshots of published SP pages. Their
+  # content is Forms embed IDs, canvas web-part instance IDs, and base64 media, none of which are
+  # credentials. Secrets are never authored INTO a page export (they live in config/env/code).
+  # Path-scoped so a real secret elsewhere is unaffected (round-4 challenger fix: was a broken
+  # line-regex on '.canvas.json' + an 'id=' allowlist that missed the '%3D'-encoded real data).
+  '''(^|/)sp-extracted/.*\.(canvas\.json|aspx)$''',
+  '''\.canvas\.json$''',
+  # Email-signature HTML — embeds inline base64 PNG/JPEG images + Exchange content-IDs. The whole
+  # file is presentation markup, not a secret store.
+  '''(^|/).*signature.*\.html?$''',
+]
+# Path-scoped image/binary content: whole files that are base64-encoded media are not secret
+# sources. Scoping by PATH (not line) is FN-safe. SharePoint canvas exports embed media + Forms
+# IDs; email-signature HTML embeds inline images. A real secret is not committed inside a page
+# export or a signature image, so path-muting these is safe and kills the dominant doc-FP class.
+paths_extra_note = "see below — canvas/signature handled by extension + content-type paths"
+regexes = [
+  # gitleaks:allow inline directive (kept working). This is the ONLY line-independent global
+  # value mute that is intrinsically safe: it is an explicit author opt-out marker, not a shape.
+  '''gitleaks:allow''',
+]
+# regexTarget for the global regexes above = the default (match). We deliberately keep this list
+# to ONLY intrinsically-safe markers. Everything value-shaped moved to the per-rule match-targeted
+# allowlists, and everything context-shaped moved to the paths list — so no global regex can ever
+# mute a real secret by line co-location.
