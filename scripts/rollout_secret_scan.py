@@ -44,6 +44,10 @@ jobs:
       # the SAME owner/repo@sha as the `uses:` line above.
       config_repo: {shared_repo}
       config_ref: {sha}
+      # Pre-existing accepted findings live in this repo's baseline so the gate does not wall off
+      # commits on day one (spec P5). The reusable workflow guards on file existence, so this is a
+      # no-op for a repo that has no baseline.
+      baseline_path: .gitleaks-baseline.json
 """
 
 
@@ -83,10 +87,16 @@ def rollout_repo(repo_dir: str, shared_repo: str, sha: str, apply: bool) -> dict
     caller.parent.mkdir(parents=True, exist_ok=True)
     caller.write_text(content)
     sh(["git", "add", CALLER_PATH], cwd=repo_dir)
+    # Commit the P5 baseline alongside the caller if one was generated for this repo, so the gate
+    # goes green on day one (pre-existing accepted findings are already muted). No baseline = the
+    # baseline_path input is a guarded no-op.
+    if (Path(repo_dir) / ".gitleaks-baseline.json").exists():
+        sh(["git", "add", ".gitleaks-baseline.json"], cwd=repo_dir)
     sh(["git", "commit", "-m",
-        "5.740 P2: add Tier-2 secret-scan CI caller\n\n"
+        "5.740 P2: add Tier-2 secret-scan CI caller + P5 baseline\n\n"
         f"Calls the fleet reusable secret-scan workflow at pinned SHA {sha[:8]}.\n"
-        "Detection backstop (post-push) for secrets that bypass the pre-commit hook.\n\n"
+        "Detection backstop (post-push) for secrets that bypass the pre-commit hook.\n"
+        "Baseline mutes pre-existing accepted findings so the gate does not wall off day one.\n\n"
         "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"], cwd=repo_dir)
     sh(["git", "push", "-u", "origin", BRANCH], cwd=repo_dir)
     pr_url = sh(["gh", "pr", "create", "--title", "5.740 P2: add secret-scan CI caller",
